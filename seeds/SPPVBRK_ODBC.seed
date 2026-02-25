@@ -1,0 +1,3 @@
+BrokerName:str:SPPVBRK
+StartTimestamp:time:
+summary_NumberOfSessions:int:0-100

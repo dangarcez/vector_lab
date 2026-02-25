@@ -1,0 +1,15 @@
+crie um arquivo python que vai ler um arquivo em /seeds (qual dos arquivos deve) e começar a gerar logs de 1 minuto em 1 minuto, de acordo com as configurações do arquivo. O exemplo de um arquivo em seeds é esse:
+
+BrokerName:str:SPPVBRK
+StartTimestamp:time:
+summary_NumberOfSessions:int:0-100
+
+Os arquivos de log gerado vão arquivos com a primeira linha sendo cabeçalho, descrito no arquivo de seeds, e as linhas consequentes são os registros. Oque o script deve fazer é criar um arquivo caso ele não exista com o mesmo nome do seed, mas que em vez de ser .seed vai ser .txt. Depois vai criar os cabeçalhos caso não exista, e em seguida vai começar a fazer append dos registros. Oque esta descrito no arquivo de seed segue o padrão <nome_da_coluna>:<tipo_da_coluna>:<valor_da_coluna>. Vão ser 3 tipos possiveis, String("str"),Inteiro(int), tempo(time). Os campos de cada linha devem ser preenchidos de acordo com o arquivo .seed, se o campo for str, sempre vai ter uma string fixa (que deve vim repetida todo registro), se o campo for int, vai ser um inteiro aleatório no range especificado no .seed (<min>-<max>), se for time, sempre vão ser o tempo de agora seguindo um formato como "2026-02-24 18:57:00.0000". Todos os valores (tanto de header quanto os registros) devem aparecer entre aspas, separados por virgula, e as linhas separadas por "/n". Um payload de logs gerado a partir do seed de demonstração acima vai ser parecer com:
+
+"BrokerName","StartTimestamp","summary_NumberOfSessions"
+"SPPVBRK","2026-02-24 18:57:00.0000","23"
+"SPPVBRK","2026-02-24 18:58:00.0000","02"
+"SPPVBRK","2026-02-24 18:59:00.0000","44"
+"SPPVBRK","2026-02-24 19:00:00.0000","92"
+
+Um ultimo detalhe é que deve haver um numero limite de registros (esse número deve ser passado em uma variavel no script), caso esse limite se exceda, o arquivo deve ser adicionado de um .<num>, como "arquivo.txt.1, arquivo.txt.2...", e um novo arquivo (com o nome original do arquivo) deve ser criado, e o log deve continuar nesse novo arquivo

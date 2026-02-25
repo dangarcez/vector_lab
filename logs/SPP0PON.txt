@@ -1,0 +1,4 @@
+"BrokerName","StartTimestamp","summary_success_count","summary_erros_count"
+"SPP0PON","2026-02-24 23:30:00.0000","3","10"
+"SPP0PON","2026-02-24 23:31:00.0000","9","1"
+"SPP0PON","2026-02-24 23:32:00.0000","8","10"
