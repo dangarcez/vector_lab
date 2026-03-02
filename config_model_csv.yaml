@@ -1,0 +1,738 @@
+# ============================================
+# VECTOR - COM ROTEAMENTO POR TIPO (PREENCHIDO)
+# Gerado a partir de config_model.yaml + real_headers.csv
+# ============================================
+
+data_dir: /var/lib/vector
+
+api:
+  enabled: false
+
+# ============================================
+# SOURCE
+# ============================================
+sources:
+  broker_files:
+    type: file
+    include:
+      - /home/garcez/vector_lab/logs/*_CICS.txt
+      - /home/garcez/vector_lab/logs/*_ConnectDirect.txt
+      - /home/garcez/vector_lab/logs/*_CORBA.txt
+      - /home/garcez/vector_lab/logs/*_File.txt
+      - /home/garcez/vector_lab/logs/*_FTEAgent.txt
+      - /home/garcez/vector_lab/logs/*_FTP.txt
+      - /home/garcez/vector_lab/logs/*_GlobalCache.txt
+      - /home/garcez/vector_lab/logs/*_JDBCConnectionPools.txt
+      - /home/garcez/vector_lab/logs/*_JMS.txt
+      - /home/garcez/vector_lab/logs/*_JVM.txt
+      - /home/garcez/vector_lab/logs/*_MQTT.txt
+      - /home/garcez/vector_lab/logs/*_ODBC.txt
+      - /home/garcez/vector_lab/logs/*_Parsers.txt
+      - /home/garcez/vector_lab/logs/*_Security.txt
+      - /home/garcez/vector_lab/logs/*_SOAPInput.txt
+      - /home/garcez/vector_lab/logs/*_Sockets.txt
+      - /home/garcez/vector_lab/logs/*_TCPIPClientNodes.txt
+      - /home/garcez/vector_lab/logs/*_TCPIPServerNodes.txt
+      - /home/garcez/vector_lab/logs/*_XA.txt
+    read_from: end
+    fingerprint:
+      strategy: device_and_inode
+    glob_minimum_cooldown_ms: 60000
+    ignore_older_secs: 86400
+    max_read_bytes: 2097152
+
+# ============================================
+# PARSE
+# ============================================
+transforms:
+  parse_broker_metrics:
+    type: remap
+    inputs:
+      - broker_files
+    source: |
+      msg = string!(.message)
+
+      if starts_with(msg, "BrokerName") || starts_with(msg, "\"BrokerName\"") || msg == "" {
+        abort
+      }
+
+      parts = parse_csv!(msg, delimiter: ",")
+      file = string!(.file)
+
+      # Campos comuns a todos os tipos (primeiros 7 headers)
+      .BrokerName = parts[0]
+      .BrokerUUID = parts[1]
+      .ExecutionGroupLabel = parts[2]
+      .ExecutionGroupUUID = parts[3]
+      .CollectionTimestamp = parts[4]
+      .StartTimestamp = parts[5]
+      .EndTimeStamp = parts[6]
+
+      if contains(file, "_CICS.txt") {
+        .summary_RequestSuccess = parts[7]
+        .summary_RequestFailures = parts[8]
+        .summary_RequestSecurityFailures = parts[9]
+        .summary_ConnectionAttemptFailures = parts[10]
+        .file_type = "cics"
+
+      } else if contains(file, "_ConnectDirect.txt") {
+        .summary_InboundTransfers = parts[7]
+        .summary_InboundBytes = parts[8]
+        .summary_NoHitTransfers = parts[9]
+        .summary_OutboundTransfers = parts[10]
+        .summary_OutboundBytes = parts[11]
+        .file_type = "connect_direct"
+
+      } else if contains(file, "_CORBA.txt") {
+        .summary_OutboundInvocations = parts[7]
+        .summary_OutboundSuccessfulInvocations = parts[8]
+        .summary_OutboundCorbaExceptions = parts[9]
+        .file_type = "corba"
+
+      } else if contains(file, "_File.txt") {
+        .summary_FilesRead = parts[7]
+        .summary_RecordsRead = parts[8]
+        .summary_BytesRead = parts[9]
+        .summary_FilesCreated = parts[10]
+        .summary_RecordsWritten = parts[11]
+        .summary_BytesWritten = parts[12]
+        .file_type = "file"
+
+      } else if contains(file, "_FTEAgent.txt") {
+        .summary_InboundTransfers = parts[7]
+        .summary_InboundBytes = parts[8]
+        .summary_OutboundTransfers = parts[9]
+        .summary_OutboundBytes = parts[10]
+        .file_type = "fte_agent"
+
+      } else if contains(file, "_FTP.txt") {
+        .summary_FTPGets = parts[7]
+        .summary_BytesReceived = parts[8]
+        .summary_FTPPuts = parts[9]
+        .summary_BytesSent = parts[10]
+        .summary_Protocol = parts[11]
+        .file_type = "ftp"
+
+      } else if contains(file, "_GlobalCache.txt") {
+        .summary_TotalMapActions = parts[7]
+        .summary_MapReads = parts[8]
+        .summary_MapWrites = parts[9]
+        .summary_MapRemoves = parts[10]
+        .summary_FailedActions = parts[11]
+        .summary_MapsUsed = parts[12]
+        .summary_ConnectionFailures = parts[13]
+        .summary_Connects = parts[14]
+        .file_type = "global_cache"
+
+      } else if contains(file, "_JDBCConnectionPools.txt") {
+        .summary_NameOfJDBCProvider = parts[7]
+        .summary_MaxSizeOfPool = parts[8]
+        .summary_ActualSizeOfPool = parts[9]
+        .summary_CumulativeRequests = parts[10]
+        .summary_CumulativeDelayedRequests = parts[11]
+        .summary_CumulativeTimedOutRequests = parts[12]
+        .summary_MaxDelayInMilliseconds = parts[13]
+        .file_type = "jdbc_connection_pools"
+
+      } else if contains(file, "_JMS.txt") {
+        .summary_NumberOfOpenJMSConnections = parts[7]
+        .summary_NumberOfClosedJMSConnections = parts[8]
+        .summary_NumberOfOpenJMSSessions = parts[9]
+        .summary_NumberOfClosedJMSSessions = parts[10]
+        .summary_NumberOfMessagesReceived = parts[11]
+        .summary_NumberOfMessagesSent = parts[12]
+        .summary_NumberOfMessagesBrowsed = parts[13]
+        .summary_NumberOfJMSConnectionFailures = parts[14]
+        .file_type = "jms"
+
+      } else if contains(file, "_JVM.txt") {
+        .summary_InitialMemoryInMB = parts[7]
+        .summary_UsedMemoryInMB = parts[8]
+        .summary_CommittedMemoryInMB = parts[9]
+        .summary_MaxMemoryInMB = parts[10]
+        .summary_CumulativeGCTimeInSeconds = parts[11]
+        .summary_CumulativeNumberOfGCCollections = parts[12]
+        .["Heap Memory_InitialMemoryInMB"] = parts[13]
+        .["Heap Memory_UsedMemoryInMB"] = parts[14]
+        .["Heap Memory_CommittedMemoryInMB"] = parts[15]
+        .["Heap Memory_MaxMemoryInMB"] = parts[16]
+        .["Non-Heap Memory_InitialMemoryInMB"] = parts[17]
+        .["Non-Heap Memory_UsedMemoryInMB"] = parts[18]
+        .["Non-Heap Memory_CommittedMemoryInMB"] = parts[19]
+        .["Non-Heap Memory_MaxMemoryInMB"] = parts[20]
+        .["Garbage Collection - scavenge_CumulativeGCTimeInSeconds"] = parts[21]
+        .["Garbage Collection - scavenge_CumulativeNumberOfGCCollections"] = parts[22]
+        .["Garbage Collection - global_CumulativeGCTimeInSeconds"] = parts[23]
+        .["Garbage Collection - global_CumulativeNumberOfGCCollections"] = parts[24]
+        .file_type = "jvm"
+
+      } else if contains(file, "_MQTT.txt") {
+        .summary_BytesReceived = parts[7]
+        .summary_BytesSent = parts[8]
+        .summary_ClosedConnections = parts[9]
+        .summary_FailedConnections = parts[10]
+        .summary_MessagesReceived = parts[11]
+        .summary_MessagesSent = parts[12]
+        .summary_OpenConnections = parts[13]
+        .file_type = "mqtt"
+
+      } else if contains(file, "_ODBC.txt") {
+        .summary_ExecuteSuccess = parts[7]
+        .summary_ExecuteFailure = parts[8]
+        .summary_ActiveConnections = parts[9]
+        .summary_ClosedConnections = parts[10]
+        .summary_ConnectionErrors = parts[11]
+        .file_type = "odbc"
+
+      } else if contains(file, "_Parsers.txt") {
+        .summary_Threads = parts[7]
+        .summary_ApproxMemKB = parts[8]
+        .summary_MaxReadKB = parts[9]
+        .summary_MaxWrittenKB = parts[10]
+        .summary_Fields = parts[11]
+        .summary_Reads = parts[12]
+        .summary_FailedReads = parts[13]
+        .summary_Writes = parts[14]
+        .summary_FailedWrites = parts[15]
+        .["[Deleted]_Threads"] = parts[16]
+        .["[Deleted]_ApproxMemKB"] = parts[17]
+        .["[Deleted]_MaxReadKB"] = parts[18]
+        .["[Deleted]_MaxWrittenKB"] = parts[19]
+        .["[Deleted]_Fields"] = parts[20]
+        .["[Deleted]_Reads"] = parts[21]
+        .["[Deleted]_FailedReads"] = parts[22]
+        .["[Deleted]_Writes"] = parts[23]
+        .["[Deleted]_FailedWrites"] = parts[24]
+        .["[Administration]_Threads"] = parts[25]
+        .["[Administration]_ApproxMemKB"] = parts[26]
+        .["[Administration]_MaxReadKB"] = parts[27]
+        .["[Administration]_MaxWrittenKB"] = parts[28]
+        .["[Administration]_Fields"] = parts[29]
+        .["[Administration]_Reads"] = parts[30]
+        .["[Administration]_FailedReads"] = parts[31]
+        .["[Administration]_Writes"] = parts[32]
+        .["[Administration]_FailedWrites"] = parts[33]
+        .file_type = "parsers"
+
+      } else if contains(file, "_Security.txt") {
+        .summary_TotalCacheEntries = parts[7]
+        .summary_TotalOperations = parts[8]
+        .summary_TotalSuccessfulOperations = parts[9]
+        .summary_TotalOperationsServicedByCache = parts[10]
+        .file_type = "security"
+
+      } else if contains(file, "_SOAPInput.txt") {
+        .summary_InboundMessagesTotal = parts[7]
+        .summary_RepliesSentTotal = parts[8]
+        .summary_InboundMessagesMadeFlow = parts[9]
+        .summary_InboundMessagesFaultedBeforeFlow = parts[10]
+        .summary_SuccessfulRepliesSent = parts[11]
+        .summary_FaultRepliesSent = parts[12]
+        .summary_PolicySetApplied = parts[13]
+        .file_type = "soap_input"
+
+      } else if contains(file, "_Sockets.txt") {
+        .summary_TotalSockets = parts[7]
+        .summary_TotalMessages = parts[8]
+        .summary_TotalDataSent_KB = parts[9]
+        .summary_TotalDataReceived_KB = parts[10]
+        .["summary_SentMessageSize_0-1KB"] = parts[11]
+        .["summary_SentMessageSize_1KB-10KB"] = parts[12]
+        .["summary_SentMessageSize_10KB-100KB"] = parts[13]
+        .["summary_SentMessageSize_100KB-1MB"] = parts[14]
+        .["summary_SentMessageSize_1MB-10MB"] = parts[15]
+        .summary_SentMessageSize_Over10MB = parts[16]
+        .["summary_ReceivedMessageSize_0-1KB"] = parts[17]
+        .["summary_ReceivedMessageSize_1KB-10KB"] = parts[18]
+        .["summary_ReceivedMessageSize_10KB-100KB"] = parts[19]
+        .["summary_ReceivedMessageSize_100KB-1MB"] = parts[20]
+        .["summary_ReceivedMessageSize_1MB-10MB"] = parts[21]
+        .summary_ReceivedMessageSize_Over10MB = parts[22]
+        .file_type = "sockets"
+
+      } else if contains(file, "_TCPIPClientNodes.txt") {
+        .summary_OpenConnections = parts[7]
+        .summary_ClosedConnections = parts[8]
+        .summary_MessagesReceived = parts[9]
+        .summary_MessagesSent = parts[10]
+        .summary_BytesReceived = parts[11]
+        .summary_BytesSent = parts[12]
+        .summary_FailedConnections = parts[13]
+        .file_type = "tcpip_client_nodes"
+
+      } else if contains(file, "_TCPIPServerNodes.txt") {
+        .summary_OpenConnections = parts[7]
+        .summary_ClosedConnections = parts[8]
+        .summary_MessagesReceived = parts[9]
+        .summary_MessagesSent = parts[10]
+        .summary_BytesReceived = parts[11]
+        .summary_BytesSent = parts[12]
+        .summary_FailedSSLConnections = parts[13]
+        .file_type = "tcpip_server_nodes"
+
+      } else if contains(file, "_XA.txt") {
+        .summary_NumberOfCommits = parts[7]
+        .summary_NumberOfRollbacks = parts[8]
+        .file_type = "xa"
+
+      } else {
+        abort
+      }
+
+      .source_file = file
+
+      del(.message)
+      del(.source_type)
+      del(.host)
+
+# ============================================
+# ROUTE POR TIPO
+# ============================================
+  route_by_type:
+    type: route
+    inputs:
+      - parse_broker_metrics
+    route:
+      cics: .file_type == "cics"
+      connect_direct: .file_type == "connect_direct"
+      corba: .file_type == "corba"
+      file: .file_type == "file"
+      fte_agent: .file_type == "fte_agent"
+      ftp: .file_type == "ftp"
+      global_cache: .file_type == "global_cache"
+      jdbc_connection_pools: .file_type == "jdbc_connection_pools"
+      jms: .file_type == "jms"
+      jvm: .file_type == "jvm"
+      mqtt: .file_type == "mqtt"
+      odbc: .file_type == "odbc"
+      parsers: .file_type == "parsers"
+      security: .file_type == "security"
+      soap_input: .file_type == "soap_input"
+      sockets: .file_type == "sockets"
+      tcpip_client_nodes: .file_type == "tcpip_client_nodes"
+      tcpip_server_nodes: .file_type == "tcpip_server_nodes"
+      xa: .file_type == "xa"
+
+# ============================================
+# SINKS POR TIPO
+# ============================================
+sinks:
+
+
+  # ======================
+  # CICS -> Event hub
+  # ======================
+  broker_cics_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.cics
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_cics"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # ConnectDirect -> Event hub
+  # ======================
+  broker_connect_direct_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.connect_direct
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_connect_direct"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # CORBA -> Event hub
+  # ======================
+  broker_corba_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.corba
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_corba"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # File -> Event hub
+  # ======================
+  broker_file_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.file
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_file"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # FTEAgent -> Event hub
+  # ======================
+  broker_fte_agent_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.fte_agent
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_fte_agent"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # FTP -> Event hub
+  # ======================
+  broker_ftp_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.ftp
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_ftp"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # GlobalCache -> Event hub
+  # ======================
+  broker_global_cache_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.global_cache
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_global_cache"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # JDBCConnectionPools -> Event hub
+  # ======================
+  broker_jdbc_connection_pools_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.jdbc_connection_pools
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_jdbc_connection_pools"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # JMS -> Event hub
+  # ======================
+  broker_jms_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.jms
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_jms"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # JVM -> Event hub
+  # ======================
+  broker_jvm_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.jvm
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_jvm"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # MQTT -> Event hub
+  # ======================
+  broker_mqtt_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.mqtt
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_mqtt"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # ODBC -> Event hub
+  # ======================
+  broker_odbc_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.odbc
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_odbc"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # Parsers -> Event hub
+  # ======================
+  broker_parsers_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.parsers
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_parsers"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # Security -> Event hub
+  # ======================
+  broker_security_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.security
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_security"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # SOAPInput -> Event hub
+  # ======================
+  broker_soap_input_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.soap_input
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_soap_input"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # Sockets -> Event hub
+  # ======================
+  broker_sockets_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.sockets
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_sockets"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # TCPIPClientNodes -> Event hub
+  # ======================
+  broker_tcpip_client_nodes_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.tcpip_client_nodes
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_tcpip_client_nodes"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # TCPIPServerNodes -> Event hub
+  # ======================
+  broker_tcpip_server_nodes_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.tcpip_server_nodes
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_tcpip_server_nodes"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  # ======================
+  # XA -> Event hub
+  # ======================
+  broker_xa_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - route_by_type.xa
+    bootstrap_servers: "logdigital-events-02.servicebus.windows.net:9093"
+    topic: "logdigital_broker_xa"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "<inserido_depois>"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true

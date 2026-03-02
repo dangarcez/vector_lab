@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_security'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['total_cache_entries']: int, ['total_operations']: int, ['total_successful_operations']: int, ['total_operations_serviced_by_cache']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_security'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_security'] ingestion json mapping 'broker_security_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"total_cache_entries","Properties":{"Path":"$[\'total_cache_entries\']"}},{"column":"total_operations","Properties":{"Path":"$[\'total_operations\']"}},{"column":"total_successful_operations","Properties":{"Path":"$[\'total_successful_operations\']"}},{"column":"total_operations_serviced_by_cache","Properties":{"Path":"$[\'total_operations_serviced_by_cache\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

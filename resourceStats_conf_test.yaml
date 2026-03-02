@@ -1,0 +1,348 @@
+# ============================================
+# SOURCE
+# ============================================
+#Trocar source logs
+#Verificar se resourceStats todos sao int (sem float)
+#Adaptar sinks
+sources:
+  broker_files:
+    type: file
+    include:
+      - /home/garcez/vector_lab/logs/*_CICS.txt
+      - /home/garcez/vector_lab/logs/*_ConnectDirect.txt
+      - /home/garcez/vector_lab/logs/*_CORBA.txt
+      - /home/garcez/vector_lab/logs/*_File.txt
+      - /home/garcez/vector_lab/logs/*_FTEAgent.txt
+      - /home/garcez/vector_lab/logs/*_FTP.txt
+      - /home/garcez/vector_lab/logs/*_GlobalCache.txt
+      - /home/garcez/vector_lab/logs/*_JDBCConnectionPools.txt
+      - /home/garcez/vector_lab/logs/*_JMS.txt
+      - /home/garcez/vector_lab/logs/*_JVM.txt
+      - /home/garcez/vector_lab/logs/*_MQTT.txt
+      - /home/garcez/vector_lab/logs/*_ODBC.txt
+      - /home/garcez/vector_lab/logs/*_Parsers.txt
+      - /home/garcez/vector_lab/logs/*_Security.txt
+      - /home/garcez/vector_lab/logs/*_SOAPInput.txt
+      - /home/garcez/vector_lab/logs/*_Sockets.txt
+      - /home/garcez/vector_lab/logs/*_TCPIPClientNodes.txt
+      - /home/garcez/vector_lab/logs/*_TCPIPServerNodes.txt
+      - /home/garcez/vector_lab/logs/*_XA.txt
+    read_from: beginning
+    fingerprint:
+      strategy: device_and_inode
+    glob_minimum_cooldown_ms: 20000
+    ignore_older_secs: 86400
+    ignore_checkpoints: false
+# ============================================
+# PARSE
+# ============================================
+transforms:
+  parse_broker_stats:
+    type: remap
+    inputs:
+      - broker_files
+    source: |
+      msg = string!(.message)
+
+      if starts_with(msg, "BrokerName") || starts_with(msg, "\"BrokerName\"") || msg == "" {
+        abort
+      }
+
+      parts = parse_csv!(msg, delimiter: ",")
+      file = string!(.file)
+      
+
+      # Campos comuns a todos os tipos (primeiros 7 headers)
+      .BrokerName = parts[0]
+      .BrokerUUID = parts[1]
+      .ExecutionGroupLabel = parts[2]
+      .ExecutionGroupUUID = parts[3]
+      .CollectionTimestamp = parse_timestamp(string!(parts[4]), "%F %T%.3f") ?? parse_timestamp!(string!(parts[4]), "%F %T")
+      .StartTimestamp = parse_timestamp(string!(parts[5]), "%F %T%.3f") ?? parse_timestamp!(string!(parts[5]), "%F %T")
+      .EndTimeStamp = parse_timestamp(string!(parts[6]), "%F %T%.3f") ?? parse_timestamp!(string!(parts[6]), "%F %T")
+
+
+      if ends_with(file, "_CICS.txt") {
+        .request_success = to_int!(parts[7])
+        .request_failures = to_int!(parts[8])
+        .request_security_failures = to_int!(parts[9])
+        .connection_attempt_failures = to_int!(parts[10])
+        .stats_type = "cics"
+
+      } else if ends_with(file, "_ConnectDirect.txt") {
+        .inbound_transfers = to_int!(parts[7])
+        .inbound_bytes = to_int!(parts[8])
+        .no_hit_transfers = to_int!(parts[9])
+        .outbound_transfers = to_int!(parts[10])
+        .outbound_bytes = to_int!(parts[11])
+        .stats_type = "connect_direct"
+
+      } else if ends_with(file, "_CORBA.txt") {
+        .outbound_invocations = to_int!(parts[7])
+        .outbound_successful_invocations = to_int!(parts[8])
+        .outbound_corba_exceptions = to_int!(parts[9])
+        .stats_type = "corba"
+
+      } else if ends_with(file, "_File.txt") {
+        .files_read = to_int!(parts[7])
+        .records_read = to_int!(parts[8])
+        .bytes_read = to_int!(parts[9])
+        .files_created = to_int!(parts[10])
+        .records_written = to_int!(parts[11])
+        .bytes_written = to_int!(parts[12])
+        .stats_type = "file"
+
+      } else if ends_with(file, "_FTEAgent.txt") {
+        .inbound_transfers = to_int!(parts[7])
+        .inbound_bytes = to_int!(parts[8])
+        .outbound_transfers = to_int!(parts[9])
+        .outbound_bytes = to_int!(parts[10])
+        .stats_type = "fte_agent"
+
+      } else if ends_with(file, "_FTP.txt") {
+        .FTP_gets = to_int!(parts[7])
+        .bytes_received = to_int!(parts[8])
+        .FTP_puts = to_int!(parts[9])
+        .bytes_sent = to_int!(parts[10])
+        .protocol = parts[11]
+        .stats_type = "ftp"
+
+      } else if ends_with(file, "_GlobalCache.txt") {
+        .total_map_actions = to_int!(parts[7])
+        .map_reads = to_int!(parts[8])
+        .map_writes = to_int!(parts[9])
+        .map_removes = to_int!(parts[10])
+        .failed_actions = to_int!(parts[11])
+        .maps_used = to_int!(parts[12])
+        .connection_failures = to_int!(parts[13])
+        .connects = to_int!(parts[14])
+        .stats_type = "global_cache"
+
+      } else if ends_with(file, "_JDBCConnectionPools.txt") {
+        .name_of_JDBC_provider = parts[7]
+        .max_size_of_pool = to_int!(parts[8])
+        .actual_size_of_pool = to_int!(parts[9])
+        .cumulative_requests = to_int!(parts[10])
+        .cumulative_delayed_requests = to_int!(parts[11])
+        .cumulative_timed_out_requests = to_int!(parts[12])
+        .max_delay_in_milliseconds = to_int!(parts[13])
+        .stats_type = "jdbc_connection_pools"
+
+      } else if ends_with(file, "_JMS.txt") {
+        .number_of_open_JMS_connections = to_int!(parts[7])
+        .number_of_closed_JMS_connections = to_int!(parts[8])
+        .number_of_open_JMS_sessions = to_int!(parts[9])
+        .number_of_closed_JMS_sessions = to_int!(parts[10])
+        .number_of_messages_received = to_int!(parts[11])
+        .number_of_messages_sent = to_int!(parts[12])
+        .number_of_messages_browsed = to_int!(parts[13])
+        .number_of_JMS_connection_failures = to_int!(parts[14])
+        .stats_type = "jms"
+
+      } else if ends_with(file, "_JVM.txt") {
+        .initial_memory_in_mb = to_int!(parts[7])
+        .used_memory_in_mb = to_int!(parts[8])
+        .committed_memory_in_mb = to_int!(parts[9])
+        .max_memory_in_mb = to_int!(parts[10])
+        .cumulative_GC_time_in_seconds = to_int!(parts[11])
+        .cumulative_number_of_GC_collections = to_int!(parts[12])
+        ."heap_initial_memory_in_mb" = to_int!(parts[13])
+        ."heap_used_memory_in_mb" = to_int!(parts[14])
+        ."heap_committed_memory_in_mb" = to_int!(parts[15])
+        ."heap_max_memory_in_mb" = to_int!(parts[16])
+        ."non_heap_initial_memory_in_mb" = to_int!(parts[17])
+        ."non_heap_used_memory_in_mb" = to_int!(parts[18])
+        ."non_heap_committed_memory_in_mb" = to_int!(parts[19])
+        ."non_heap_max_memory_in_mb" = to_int!(parts[20])
+        .scavenge_cumulative_GC_time_in_seconds = to_int!(parts[21])
+        .scavenge_cumulative_number_of_GC_collections = to_int!(parts[22])
+        .global_cumulative_GC_time_in_seconds = to_int!(parts[23])
+        .global_cumulative_number_of_GC_collections = to_int!(parts[24])
+        .stats_type = "jvm"
+
+      } else if ends_with(file, "_MQTT.txt") {
+        .bytes_received = to_int!(parts[7])
+        .bytes_sent = to_int!(parts[8])
+        .closed_connections = to_int!(parts[9])
+        .failed_connections = to_int!(parts[10])
+        .messages_received = to_int!(parts[11])
+        .messages_sent = to_int!(parts[12])
+        .open_connections = to_int!(parts[13])
+        .stats_type = "mqtt"
+
+      } else if ends_with(file, "_ODBC.txt") {
+        .execute_success = to_int!(parts[7])
+        .execute_failure = to_int!(parts[8])
+        .active_connections = to_int!(parts[9])
+        .closed_connections = to_int!(parts[10])
+        .connection_errors = to_int!(parts[11])
+        .stats_type = "odbc"
+
+      } else if ends_with(file, "_Parsers.txt") {
+        .threads = to_int!(parts[7])
+        .approx_mem_kb = to_int!(parts[8])
+        .max_read_kb = to_int!(parts[9])
+        .max_written_kb = to_int!(parts[10])
+        .fields = to_int!(parts[11])
+        .reads = to_int!(parts[12])
+        .failed_reads = to_int!(parts[13])
+        .writes = to_int!(parts[14])
+        .failed_writes = to_int!(parts[15])
+        .deleted_threads = to_int!(parts[16])
+        .deleted_approx_mem_kb = to_int!(parts[17])
+        .deleted_max_read_kb = to_int!(parts[18])
+        .deleted_max_written_kb = to_int!(parts[19])
+        .deleted_fields = to_int!(parts[20])
+        .deleted_reads = to_int!(parts[21])
+        .deleted_failed_reads = to_int!(parts[22])
+        .deleted_writes = to_int!(parts[23])
+        .deleted_failed_writes = to_int!(parts[24])
+        .administration_threads = to_int!(parts[25])
+        .administration_approx_mem_kb = to_int!(parts[26])
+        .administration_max_read_kb = to_int!(parts[27])
+        .administration_max_written_kb = to_int!(parts[28])
+        .administration_fields = to_int!(parts[29])
+        .administration_reads = to_int!(parts[30])
+        .administration_failed_reads = to_int!(parts[31])
+        .administration_writes = to_int!(parts[32])
+        .administration_failed_writes = to_int!(parts[33])
+        .stats_type = "parsers"
+
+      } else if ends_with(file, "_Security.txt") {
+        .total_cache_entries = to_int!(parts[7])
+        .total_operations = to_int!(parts[8])
+        .total_successful_operations = to_int!(parts[9])
+        .total_operations_serviced_by_cache = to_int!(parts[10])
+        .stats_type = "security"
+
+      } else if ends_with(file, "_SOAPInput.txt") {
+        .inbound_messages_total = to_int!(parts[7])
+        .replies_sent_total = to_int!(parts[8])
+        .inbound_messages_made_flow = to_int!(parts[9])
+        .inbound_messages_faulted_before_flow = to_int!(parts[10])
+        .successful_replies_sent = to_int!(parts[11])
+        .fault_replies_sent = to_int!(parts[12])
+        .policy_set_applied = parts[13]
+        .stats_type = "soap_input"
+
+      } else if ends_with(file, "_Sockets.txt") {
+        .total_sockets = to_int!(parts[7])
+        .total_messages = to_int!(parts[8])
+        .total_data_sent_kb = to_int!(parts[9])
+        .total_data_received_kb = to_int!(parts[10])
+        ."sent_message_size_0_1KB" = to_int!(parts[11])
+        ."sent_message_size_1KB_10KB" = to_int!(parts[12])
+        ."sent_message_size_10KB_100KB" = to_int!(parts[13])
+        ."sent_message_size_100KB_1MB" = to_int!(parts[14])
+        ."sent_message_size_1MB_10MB" = to_int!(parts[15])
+        ."sent_message_size_over_10MB" = to_int!(parts[16])
+        ."received_message_size_0_1KB" = to_int!(parts[17])
+        ."received_message_size_1KB_10KB" = to_int!(parts[18])
+        ."received_message_size_10KB_100KB" = to_int!(parts[19])
+        ."received_message_size_100KB_1MB" = to_int!(parts[20])
+        ."received_message_size_1MB_10MB" = to_int!(parts[21])
+        ."received_message_size_over_10MB" = to_int!(parts[22])
+        .stats_type = "sockets"
+
+      } else if ends_with(file, "_TCPIPClientNodes.txt") {
+        .open_connections = to_int!(parts[7])
+        .closed_connections = to_int!(parts[8])
+        .messages_received = to_int!(parts[9])
+        .messages_sent = to_int!(parts[10])
+        .bytes_received = to_int!(parts[11])
+        .bytes_sent = to_int!(parts[12])
+        .failed_connections = to_int!(parts[13])
+        .stats_type = "tcpip_client_nodes"
+
+      } else if ends_with(file, "_TCPIPServerNodes.txt") {
+        .open_connections = to_int!(parts[7])
+        .closed_connections = to_int!(parts[8])
+        .messages_received = to_int!(parts[9])
+        .messages_sent = to_int!(parts[10])
+        .bytes_received = to_int!(parts[11])
+        .bytes_sent = to_int!(parts[12])
+        .failed_SSL_connections = to_int!(parts[13])
+        .stats_type = "tcpip_server_nodes"
+
+      } else if ends_with(file, "_XA.txt") {
+        .mumber_of_commits = to_int!(parts[7])
+        .number_of_rollbacks = to_int!(parts[8])
+        .stats_type = "xa"
+
+      } else {
+        abort
+      }
+
+      del(.message)
+      del(.source_type)
+      del(.host)
+      del(.file)
+      del(.timestamp)
+
+# ============================================
+# ROUTE POR TIPO
+# ============================================
+  broker_stats_route:
+    type: route
+    inputs:
+      - parse_broker_stats
+    route:
+      cics: .stats_type == "cics"
+      connect_direct: .stats_type == "connect_direct"
+      corba: .stats_type == "corba"
+      file: .stats_type == "file"
+      fte_agent: .stats_type == "fte_agent"
+      ftp: .stats_type == "ftp"
+      global_cache: .stats_type == "global_cache"
+      jdbc_connection_pools: .stats_type == "jdbc_connection_pools"
+      jms: .stats_type == "jms"
+      jvm: .stats_type == "jvm"
+      mqtt: .stats_type == "mqtt"
+      odbc: .stats_type == "odbc"
+      parsers: .stats_type == "parsers"
+      security: .stats_type == "security"
+      soap_input: .stats_type == "soap_input"
+      sockets: .stats_type == "sockets"
+      tcpip_client_nodes: .stats_type == "tcpip_client_nodes"
+      tcpip_server_nodes: .stats_type == "tcpip_server_nodes"
+      xa: .stats_type == "xa"
+
+
+# ============================================
+# SINKS POR TIPO
+# ============================================
+sinks:
+  broker_jvm_eh_logdigital:
+    type: kafka
+    encoding:
+      codec: "json"
+    inputs:
+      - broker_stats_route.jvm
+    bootstrap_servers: "garcez.servicebus.windows.net:9093"
+    topic: "broker_stats_jvm"
+    compression: none
+    sasl:
+      enabled: true
+      mechanism: "PLAIN"
+      username: "$$ConnectionString"
+      password: "Endpoint=sb://garcez.servicebus.windows.net/;SharedAccessKeyName=broker;SharedAccessKey=JcAA1pySumHleM0T2oXYnt9X66RLMoVN2+AEhEFr1oE=;EntityPath=broker_stats_jvm"
+    tls:
+      enabled: true
+    healthcheck:
+      enabled: true
+
+  console_jvm:
+    type: console
+    inputs:
+      - broker_stats_route.jvm
+    encoding:
+      codec: json
+
+  console_odbc:
+    type: console
+    inputs:
+      - broker_stats_route.odbc
+    encoding:
+      codec: json
+      json:
+        pretty: true

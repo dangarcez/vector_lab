@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_ftp'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['FTP_gets']: int, ['bytes_received']: int, ['FTP_puts']: int, ['bytes_sent']: int, ['protocol']: string, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_ftp'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_ftp'] ingestion json mapping 'broker_ftp_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"FTP_gets","Properties":{"Path":"$[\'FTP_gets\']"}},{"column":"bytes_received","Properties":{"Path":"$[\'bytes_received\']"}},{"column":"FTP_puts","Properties":{"Path":"$[\'FTP_puts\']"}},{"column":"bytes_sent","Properties":{"Path":"$[\'bytes_sent\']"}},{"column":"protocol","Properties":{"Path":"$[\'protocol\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

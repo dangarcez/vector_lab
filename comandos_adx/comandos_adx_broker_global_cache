@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_global_cache'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['total_map_actions']: int, ['map_reads']: int, ['map_writes']: int, ['map_removes']: int, ['failed_actions']: int, ['maps_used']: int, ['connection_failures']: int, ['connects']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_global_cache'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_global_cache'] ingestion json mapping 'broker_global_cache_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"total_map_actions","Properties":{"Path":"$[\'total_map_actions\']"}},{"column":"map_reads","Properties":{"Path":"$[\'map_reads\']"}},{"column":"map_writes","Properties":{"Path":"$[\'map_writes\']"}},{"column":"map_removes","Properties":{"Path":"$[\'map_removes\']"}},{"column":"failed_actions","Properties":{"Path":"$[\'failed_actions\']"}},{"column":"maps_used","Properties":{"Path":"$[\'maps_used\']"}},{"column":"connection_failures","Properties":{"Path":"$[\'connection_failures\']"}},{"column":"connects","Properties":{"Path":"$[\'connects\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

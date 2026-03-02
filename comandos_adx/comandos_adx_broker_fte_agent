@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_fte_agent'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['inbound_transfers']: int, ['inbound_bytes']: int, ['outbound_transfers']: int, ['outbound_bytes']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_fte_agent'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_fte_agent'] ingestion json mapping 'broker_fte_agent_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"inbound_transfers","Properties":{"Path":"$[\'inbound_transfers\']"}},{"column":"inbound_bytes","Properties":{"Path":"$[\'inbound_bytes\']"}},{"column":"outbound_transfers","Properties":{"Path":"$[\'outbound_transfers\']"}},{"column":"outbound_bytes","Properties":{"Path":"$[\'outbound_bytes\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

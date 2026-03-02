@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_corba'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['outbound_invocations']: int, ['outbound_successful_invocations']: int, ['outbound_corba_exceptions']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_corba'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_corba'] ingestion json mapping 'broker_corba_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"outbound_invocations","Properties":{"Path":"$[\'outbound_invocations\']"}},{"column":"outbound_successful_invocations","Properties":{"Path":"$[\'outbound_successful_invocations\']"}},{"column":"outbound_corba_exceptions","Properties":{"Path":"$[\'outbound_corba_exceptions\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_odbc'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['execute_success']: int, ['execute_failure']: int, ['active_connections']: int, ['closed_connections']: int, ['connection_errors']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_odbc'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_odbc'] ingestion json mapping 'broker_odbc_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"execute_success","Properties":{"Path":"$[\'execute_success\']"}},{"column":"execute_failure","Properties":{"Path":"$[\'execute_failure\']"}},{"column":"active_connections","Properties":{"Path":"$[\'active_connections\']"}},{"column":"closed_connections","Properties":{"Path":"$[\'closed_connections\']"}},{"column":"connection_errors","Properties":{"Path":"$[\'connection_errors\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

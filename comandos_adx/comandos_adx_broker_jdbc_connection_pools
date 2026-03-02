@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_jdbc_connection_pools'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['name_of_JDBC_provider']: string, ['max_size_of_pool']: int, ['actual_size_of_pool']: int, ['cumulative_requests']: int, ['cumulative_delayed_requests']: int, ['cumulative_timed_out_requests']: int, ['max_delay_in_milliseconds']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_jdbc_connection_pools'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_jdbc_connection_pools'] ingestion json mapping 'broker_jdbc_connection_pools_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"name_of_JDBC_provider","Properties":{"Path":"$[\'name_of_JDBC_provider\']"}},{"column":"max_size_of_pool","Properties":{"Path":"$[\'max_size_of_pool\']"}},{"column":"actual_size_of_pool","Properties":{"Path":"$[\'actual_size_of_pool\']"}},{"column":"cumulative_requests","Properties":{"Path":"$[\'cumulative_requests\']"}},{"column":"cumulative_delayed_requests","Properties":{"Path":"$[\'cumulative_delayed_requests\']"}},{"column":"cumulative_timed_out_requests","Properties":{"Path":"$[\'cumulative_timed_out_requests\']"}},{"column":"max_delay_in_milliseconds","Properties":{"Path":"$[\'max_delay_in_milliseconds\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

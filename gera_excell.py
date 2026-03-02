@@ -17,7 +17,7 @@ DEFAULT_LOGS_DIR = PROJECT_ROOT / "logs"
 DEFAULT_OUTPUT_FILE = PROJECT_ROOT / "analise_logs.xlsx"
 ROTATED_SUFFIX_RE = re.compile(r"\.\d+$")
 # INCLUDE_LOG_FILES_REGEX = r".*"  # Regex aplicada em path.name (ex.: r"^SPPVBRK.*\.txt$")
-INCLUDE_LOG_FILES_REGEX = r".*SPPV.*.txt"  # Regex aplicada em path.name (ex.: r"^SPPVBRK.*\.txt$")
+INCLUDE_LOG_FILES_REGEX = r".*.txt"  # Regex aplicada em path.name (ex.: r"^SPPVBRK.*\.txt$")
 
 INCLUDE_LOG_FILES_RE = re.compile(INCLUDE_LOG_FILES_REGEX)
 
@@ -94,16 +94,27 @@ def build_headers_per_file_sheet(headers_by_file: dict[str, list[str]]) -> list[
 def build_header_frequency_sheet(headers_by_file: dict[str, list[str]]) -> list[list[object]]:
     total_files = len(headers_by_file)
     appearances = Counter[str]()
+    example_file_by_header: dict[str, str] = {}
 
-    for headers in headers_by_file.values():
+    for file_name in sorted(headers_by_file):
+        headers = headers_by_file[file_name]
         for header in set(headers):
             appearances[header] += 1
+            example_file_by_header.setdefault(header, file_name)
 
     ordered = sorted(appearances.items(), key=lambda item: (-item[1], item[0].lower(), item[0]))
-    rows: list[list[object]] = [["header", "aparicoes", "total_arquivos", "resumo"]]
+    rows: list[list[object]] = [["header", "aparicoes", "total_arquivos", "arquivo exemplo", "resumo"]]
 
     for header, count in ordered:
-        rows.append([header, count, total_files, f"{header};{count}/{total_files}"])
+        rows.append(
+            [
+                header,
+                count,
+                total_files,
+                example_file_by_header.get(header, ""),
+                f"{header};{count}/{total_files}",
+            ]
+        )
     return rows
 
 

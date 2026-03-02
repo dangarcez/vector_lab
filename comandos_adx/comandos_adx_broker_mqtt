@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_mqtt'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['bytes_received']: int, ['bytes_sent']: int, ['closed_connections']: int, ['failed_connections']: int, ['messages_received']: int, ['messages_sent']: int, ['open_connections']: int, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_mqtt'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_mqtt'] ingestion json mapping 'broker_mqtt_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"bytes_received","Properties":{"Path":"$[\'bytes_received\']"}},{"column":"bytes_sent","Properties":{"Path":"$[\'bytes_sent\']"}},{"column":"closed_connections","Properties":{"Path":"$[\'closed_connections\']"}},{"column":"failed_connections","Properties":{"Path":"$[\'failed_connections\']"}},{"column":"messages_received","Properties":{"Path":"$[\'messages_received\']"}},{"column":"messages_sent","Properties":{"Path":"$[\'messages_sent\']"}},{"column":"open_connections","Properties":{"Path":"$[\'open_connections\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

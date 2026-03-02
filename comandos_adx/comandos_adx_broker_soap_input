@@ -1,0 +1,11 @@
+// Create table command
+////////////////////////////////////////////////////////////
+.create table['broker_soap_input'](['BrokerName']: string, ['BrokerUUID']: guid, ['CollectionTimestamp']: datetime, ['EndTimeStamp']: datetime, ['ExecutionGroupLabel']: string, ['ExecutionGroupUUID']: guid, ['StartTimestamp']: datetime, ['inbound_messages_total']: int, ['replies_sent_total']: int, ['inbound_messages_made_flow']: int, ['inbound_messages_faulted_before_flow']: int, ['successful_replies_sent']: int, ['fault_replies_sent']: int, ['policy_set_applied']: string, ['stats_type']: string) with (folder = "Broker")
+
+// Ingestion Batching Policy Alter Command
+////////////////////////////////////////////////////////////
+.alter table['broker_soap_input'] policy ingestionbatching @'{"MaximumBatchingTimeSpan":"00:00:20"}'
+
+   // Create mapping command
+   ////////////////////////////////////////////////////////////
+   .create table['broker_soap_input'] ingestion json mapping 'broker_soap_input_mapping' '[{"column":"BrokerName","Properties":{"Path":"$[\'BrokerName\']"}},{"column":"BrokerUUID","Properties":{"Path":"$[\'BrokerUUID\']"}},{"column":"CollectionTimestamp","Properties":{"Path":"$[\'CollectionTimestamp\']"}},{"column":"EndTimeStamp","Properties":{"Path":"$[\'EndTimeStamp\']"}},{"column":"ExecutionGroupLabel","Properties":{"Path":"$[\'ExecutionGroupLabel\']"}},{"column":"ExecutionGroupUUID","Properties":{"Path":"$[\'ExecutionGroupUUID\']"}},{"column":"StartTimestamp","Properties":{"Path":"$[\'StartTimestamp\']"}},{"column":"inbound_messages_total","Properties":{"Path":"$[\'inbound_messages_total\']"}},{"column":"replies_sent_total","Properties":{"Path":"$[\'replies_sent_total\']"}},{"column":"inbound_messages_made_flow","Properties":{"Path":"$[\'inbound_messages_made_flow\']"}},{"column":"inbound_messages_faulted_before_flow","Properties":{"Path":"$[\'inbound_messages_faulted_before_flow\']"}},{"column":"successful_replies_sent","Properties":{"Path":"$[\'successful_replies_sent\']"}},{"column":"fault_replies_sent","Properties":{"Path":"$[\'fault_replies_sent\']"}},{"column":"policy_set_applied","Properties":{"Path":"$[\'policy_set_applied\']"}},{"column":"stats_type","Properties":{"Path":"$[\'stats_type\']"}}]'

@@ -1,0 +1,5 @@
+BrokerName:str:SPP0PON
+BrokerUUID:str:Sfgidfn234
+StartTimestamp:time:
+summary_success_count:int:2-10
+summary_erros_count:int:0-10

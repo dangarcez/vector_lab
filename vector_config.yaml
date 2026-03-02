@@ -1,0 +1,60 @@
+data_dir: /var/lib/vector #Verificar nas configuração do vector instalado se ja existe
+
+sources:
+  resourceStats:
+    type: file
+    include:
+      - /var/log/*_JVM.txt #modificar para pasta de logs devida
+      - /var/log/*_ODBC.txt
+    #read_from: beginning
+    decoding:
+      codec: csv
+      csv:
+        delimiter: ","
+        headers: auto #Usa primeira linha como nome das colunas
+    ignore_older: 0
+    fingerprint:
+      strategy: device_and_inode  #Estrategia para logrotate tradicional (pode perder eventos com copytruncate)      
+
+transforms:
+  add_eg_field:
+    type: remap
+    inputs:
+      - resourceStats
+    source: |
+      filename = split(.file,"/")[-1]
+      matches = match(filename, r'^(.*)_.*\.txt$')
+      if matches != null {
+        .eg = matches[0]
+      } else {
+        .eg = "unknown"
+      }
+
+  resourceStats_by_type:
+    type: route
+    inputs:
+      - add_eg_field
+    route:
+      jvm: contains!(.file,"_JVM.txt")
+      odbc: contains!(.file,"_ODBC.txt")
+
+
+
+sinks:
+  console:
+    type: console
+    inputs:
+      - resourceStats_by_type.jvm
+    encoding:
+      codec: json
+  console2:
+    type: console
+    inputs:
+      - resourceStats_by_type.odbc
+    encoding:
+      codec: json
+
+#file source monitora inode, não apenas nome do arquivo
+
+#como excluir campos?
+#devo definir header manualmente? a recomendação é que sim

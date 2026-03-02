@@ -1,0 +1,209 @@
+sources:
+  csv:
+    type: file
+    include:
+      - "/home/garcez/vector_lab/logs/*_JVM.txt"   # ajuste conforme seu layout
+    fingerprinting:
+        strategy: device_and_inode
+    read_from: beginning
+    ignore_checkpoints: true
+
+transforms:
+  csv_to_json:
+    type: lua
+    inputs:
+      - csv
+    version: "2"
+
+    hooks:
+      init: |
+        function ()
+          -- estado por arquivo (buffer/header por "file" + "host")
+          state = {}
+        end
+
+      process: |
+        function (event, emit)
+          -- ASSUNTOS DO CSV:
+          -- - Delimitador: vírgula
+          -- - Sem aspas nem quebras de linha em campos
+          -- - Primeira linha é o header
+          -- - Demais linhas são dados
+
+          local SEP = ","
+
+          -- divide uma linha simples por vírgula (sem suporte a aspas/escapes) 
+          local function split_simple(line, sep)
+            local t = {}
+            local start = 1
+            local i = 1
+            while true do
+              local pos = string.find(line, sep, start, true)
+              if not pos then
+                t[i] = string.sub(line, start)
+                break
+              else
+                t[i] = string.sub(line, start, pos - 1)
+                start = pos + 1
+                i = i + 1
+              end
+            end
+            return t
+          end
+
+          -- normaliza espaços em branco (só por garantia)
+          local function trim(s)
+            return (s:gsub("^%s+", ""):gsub("%s+$", ""))
+          end
+
+          -- remove BOM UTF-8, se existir no inicio da linha/campo
+          local function strip_bom(s)
+            if s == nil then return nil end
+            return (s:gsub("^\239\187\191", ""))
+          end
+
+          -- leitura tolerante de campos do evento (algumas versoes expõem em event.log.*)
+          local function get_event_field(ev, field)
+            if ev.log and ev.log[field] ~= nil then
+              return ev.log[field]
+            end
+            if ev[field] ~= nil then
+              return ev[field]
+            end
+            return nil
+          end
+
+          -- heuristica simples para detectar linha de header (inclusive após rotate)
+          local function is_header_row(cols)
+            if cols == nil or #cols == 0 then return false end
+            local first = strip_bom(trim(cols[1] or ""))
+            return first == "BrokerName" or first == "\"BrokerName\""
+          end
+
+          -- tenta converter valores "numéricos"
+          local function to_number_if_possible(s)
+            if s == nil or s == "" then return nil end
+            local n = tonumber(s)
+            return n ~= nil and n or s
+          end
+
+          -- Converte "YYYY-MM-DD hh:mm:ss.mmm" em "YYYY-MM-DDThh:mm:ss.mmmZ"
+          local function to_rfc3339(ts)
+            if ts == nil or ts == "" then return nil end
+            local y, m, d, hh, mm, ss, ms = ts:match("^(%d%d%d%d)%-(%d%d)%-(%d%d) (%d%d):(%d%d):(%d%d)%.(%d+)$")
+            if not y then
+              y, m, d, hh, mm, ss = ts:match("^(%d%d%d%d)%-(%d%d)%-(%d%d) (%d%d):(%d%d):(%d%d)$")
+              if not y then return ts end
+              return string.format("%s-%s-%sT%s:%s:%sZ", y, m, d, hh, mm, ss)
+            end
+            return string.format("%s-%s-%sT%s:%s:%s.%sZ", y, m, d, hh, mm, ss, ms)
+          end
+
+          -- chave por arquivo (usa 'host' e 'file' atribuídos pela source)
+          -- tenta primeiro em event.log.*, com fallback para event.*
+          local event_host = get_event_field(event, "host") or "local"
+          local event_file = get_event_field(event, "file") or "stdin"
+          local key = tostring(event_host) .. "|" .. tostring(event_file)
+          if state[key] == nil then
+            state[key] = { header = nil }
+          end
+          local st = state[key]
+
+          local line = get_event_field(event, "message")
+          if not line or line == "" then
+            return
+          end
+
+          local values = split_simple(line, SEP)
+          for i = 1, #values do
+            values[i] = trim(values[i])
+            if i == 1 then
+              values[i] = strip_bom(values[i])
+            end
+          end
+
+          -- primeira linha = header / header reaparecendo (ex.: rotate)
+          if is_header_row(values) then
+            st.header = values
+            -- descarta a linha de header (não emitir)
+            return
+          end
+
+          if not st.header then
+            -- sem header conhecido ainda (ex.: começou a ler no meio do arquivo)
+            return
+          end
+
+          -- dados
+          local obj = {}
+
+          -- mapeia colunas dinamicamente
+          for i, keyname in ipairs(st.header) do
+            obj[keyname] = values[i] or nil
+          end
+
+          -- substitui o payload do evento pelo objeto estruturado
+          event.log.message = nil
+          for k, v in pairs(obj) do
+            event.log[k] = v
+          end
+
+          emit(event)
+        end
+# ============================================
+# EXTRAI TIPO E EG
+# ============================================
+  extract_metadata:
+    type: remap
+    inputs:
+      - csv_to_json
+    source: |
+      file_path = string!(.file)
+      filename = split!(file_path, "/")[-1]
+      parsed = parse_regex(filename, r'^ResourceStats_(?P<eg>.+)_(?P<tipo>[^_]+)\.txt(?:\.\d+)?$') ?? null
+
+      if parsed != null {
+        .eg = parsed.eg
+        .tipo = downcase(string!(parsed.tipo))
+      } else {
+        .eg = "unknown"
+        .tipo = "unknown"
+      }
+# ============================================
+# ROUTE POR TIPO
+# ============================================
+  route_by_type:
+    type: route
+    inputs:
+      - extract_metadata
+    route:
+      cics: .tipo == "cics"
+      connect_direct: .tipo == "connect_direct"
+      corba: .tipo == "corba"
+      file: .tipo == "file"
+      fte_agent: .tipo == "fte_agent"
+      ftp: .tipo == "ftp"
+      global_cache: .tipo == "global_cache"
+      jdbc_connection_pools: .tipo == "jdbc_connection_pools"
+      jms: .tipo == "jms"
+      jvm: .tipo == "jvm"
+      mqtt: .tipo == "mqtt"
+      odbc: .tipo == "odbc"
+      parsers: .tipo == "parsers"
+      security: .tipo == "security"
+      soap_input: .tipo == "soap_input"
+      sockets: .tipo == "sockets"
+      tcpip_client_nodes: .tipo == "tcpip_client_nodes"
+      tcpip_server_nodes: .tipo == "tcpip_server_nodes"
+      xa: .tipo == "xa"
+
+# Print parsed logs to stdout
+sinks:
+  print:
+    type: "console"
+    inputs: 
+      - route_by_type.jvm
+    encoding:
+      codec: "json"
+      json:
+        pretty: true

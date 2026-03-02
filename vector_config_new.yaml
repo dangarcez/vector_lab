@@ -1,0 +1,73 @@
+data_dir: /var/lib/vector
+
+sources:
+  resourceStats:
+    type: file
+    include:
+      - /var/log/ResourceStats_*.txt
+    read_from: beginning
+    max_read_bytes: 1048576
+
+    framing:
+      method: newline
+
+    deserializer:
+      codec: csv
+      csv:
+        delimiter: ","
+        headers: auto
+
+    fingerprint:
+      strategy: device_and_inode
+
+transforms:
+
+  extract_metadata:
+    type: remap
+    inputs:
+      - resourceStats
+    source: |
+      filename = split(.file,"/")[-1]
+      matches = match(filename, r'^ResourceStats_([^_]+)_([^_]+)\.txt$')
+
+      if matches != null {
+        .eg = matches[0]
+        .tipo = downcase(matches[1])
+      } else {
+        .eg = "unknown"
+        .tipo = "unknown"
+      }
+
+  exclude_fields:
+    type: remap
+    inputs:
+      - extract_metadata
+    source: |
+      del(.BrokerUUID)
+      del(.ExecutionGroupUUID)
+      del(.CollectionTimestamp)
+      del(.StartTimestamp)
+
+  route_by_type:
+    type: route
+    inputs:
+      - exclude_fields
+    route:
+      jvm: .tipo == "jvm"
+      odbc: .tipo == "odbc"
+      unknown: true
+
+sinks:
+  console_jvm:
+    type: console
+    inputs:
+      - route_by_type.jvm
+    encoding:
+      codec: json
+
+  console_odbc:
+    type: console
+    inputs:
+      - route_by_type.odbc
+    encoding:
+      codec: json

@@ -1,0 +1,20 @@
+
+1️⃣ Criar tabela
+2️⃣ Criar mapping
+3️⃣ Criar consumer group
+4️⃣ Criar data connection
+5️⃣ Verificar ingestão
+6️⃣ Monitorar falhas
+
+
+#Verificar schema
+.show table BrokerMetrics
+broker_stats_jvm
+| getschema
+
+
+#Verificar json mapping
+.show table BrokerMetrics ingestion json mappings
+
+#politica de retenção
+.show table broker_stats_jvm policy retention
