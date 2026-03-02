@@ -9,12 +9,13 @@
 
 #Verificar schema
 .show table BrokerMetrics
+
 broker_stats_jvm
 | getschema
 
 
 #Verificar json mapping
-.show table BrokerMetrics ingestion json mappings
+.show table broker_stats_jvm ingestion json mappings
 
 #politica de retenção
 .show table broker_stats_jvm policy retention

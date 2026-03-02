@@ -325,7 +325,7 @@ sinks:
       enabled: true
       mechanism: "PLAIN"
       username: "$$ConnectionString"
-      password: "Endpoint=sb://garcez.servicebus.windows.net/;SharedAccessKeyName=broker;SharedAccessKey=JcAA1pySumHleM0T2oXYnt9X66RLMoVN2+AEhEFr1oE=;EntityPath=broker_stats_jvm"
+      password: ""
     tls:
       enabled: true
     healthcheck:
