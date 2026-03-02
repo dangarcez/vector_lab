@@ -318,7 +318,7 @@ sinks:
       codec: "json"
     inputs:
       - broker_stats_route.jvm
-    bootstrap_servers: "garcez.servicebus.windows.net:9093"
+    bootstrap_servers: ""
     topic: "broker_stats_jvm"
     compression: none
     sasl:
